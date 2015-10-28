@@ -25,17 +25,17 @@ grails.project.dependency.resolution = {
         mavenRepo "http://repo.grails.org/grails/libs-releases/"
         mavenRepo "http://m2repo.spockframework.org/ext/"
         mavenRepo "http://m2repo.spockframework.org/snapshots/"
+        mavenRepo "https://repo.grails.org/grails/plugins-releases-local"
     }
     dependencies {
         compile('commons-pool:commons-pool:1.6')
-
         compile('net.greghaines:jesque:1.3.2')
         compile('redis.clients:jedis:2.6.0')
         compile('joda-time:joda-time:2.5')
     }
     plugins {
-        compile ":redis:1.5.5"
-        build(':release:3.0.1', ':rest-client-builder:2.0.3') {
+        compile ":redis:1.6.6"
+        build(':release:3.1.1', ':rest-client-builder:2.1.1') {
             export = false
         }
     }
