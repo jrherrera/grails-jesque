@@ -8,6 +8,7 @@ import net.greghaines.jesque.Job
 import net.greghaines.jesque.json.ObjectMapperFactory
 import org.joda.time.Seconds
 import org.joda.time.DateTimeZone
+import com.newrelic.api.agent.Trace
 
 class JesqueSchedulerService {
     static transactional = false
@@ -25,18 +26,22 @@ class JesqueSchedulerService {
 
     protected static final Integer STALE_SERVER_SECONDS = 30
 
+    @Trace
     void schedule(String jobName, String cronExpressionString, String jesqueJobQueue, String jesqueJobName, Object... args) {
         schedule(jobName, cronExpressionString, jesqueJobQueue, jesqueJobName, args.toList())
     }
 
+    @Trace
     void schedule(String jobName, String cronExpressionString, String jesqueJobQueue, String jesqueJobName, List args) {
         schedule(jobName, cronExpressionString, DateTimeZone.default, jesqueJobQueue, jesqueJobName, args)
     }
     
+    @Trace
     void schedule(String jobName, String cronExpressionString, DateTimeZone timeZone, String jesqueJobQueue, String jesqueJobName, Object... args) {
         schedule(jobName, cronExpressionString, timeZone, jesqueJobQueue, jesqueJobName, args.toList())
     }
 
+    @Trace
     void schedule(String jobName, String cronExpressionString, DateTimeZone timeZone, String jesqueJobQueue, String jesqueJobName, List args) {
         assert CronExpression.isValidExpression(cronExpressionString)
         CronExpression cronExpression = new CronExpression(cronExpressionString, timeZone)
@@ -65,11 +70,13 @@ class JesqueSchedulerService {
         }
     }
 
+    @Trace
     void deleteSchedule(String name) {
         scheduledJobDaoService.delete(name)
         triggerDaoService.delete(name)
     }
 
+    @Trace
     Integer enqueueReadyJobs(DateTime until, String hostName) {
         //check to see if there are any servers that have missed removing check-in
         //if so get the intersection of WATIING jobs that are not in the nextFireTimeIndex and add
@@ -94,6 +101,7 @@ class JesqueSchedulerService {
         return acquiredJobs.size()
     }
 
+    @Trace
     List<Tuple> acquireJobs(DateTime until, Integer number, String hostName) {
         redisService.withRedis { Jedis redis ->
             Set<Tuple> waitingJobs = redis.zrangeWithScores(Trigger.TRIGGER_NEXTFIRE_INDEX, 0, number - 1)
@@ -143,6 +151,7 @@ class JesqueSchedulerService {
         } as List<Tuple>
     }
 
+    @Trace
     void enqueueJob(Jedis redis, String jobName, String hostName) {
         log.info "Enqueuing job $jobName"
         redis.watch(Trigger.getRedisKeyForJobName(jobName))
@@ -187,6 +196,7 @@ class JesqueSchedulerService {
         redis.srem(Trigger.getAcquiredIndexByHostName(hostName), jobName)
     }
 
+    @Trace
     void serverCheckIn(String hostName, DateTime checkInDate) {
         //TODO: detect checkins by another server of the same name
         redisService.withRedis {Jedis redis ->
@@ -194,6 +204,7 @@ class JesqueSchedulerService {
         }
     }
 
+    @Trace
     public void cleanUpStaleServers() {
         def staleServerHash = [:]
 
@@ -208,6 +219,7 @@ class JesqueSchedulerService {
         }
     }
 
+    @Trace
     public void cleanUpStaleServer(String hostName) {
         redisService.withRedis {Jedis redis ->
             log.info "Cleaning up stale server $hostName"
@@ -237,6 +249,7 @@ class JesqueSchedulerService {
         }
     }
 
+    @Trace
     public String getRedisKeyForQueueName(String queueName) {
         "$RESQUE_QUEUE_PREFIX:${queueName}"
     }

@@ -2,8 +2,8 @@ package grails.plugin.jesque
 
 import org.joda.time.DateTime
 import org.springframework.beans.factory.DisposableBean
-
 import java.util.concurrent.atomic.AtomicReference
+import com.newrelic.api.agent.Trace
 
 class JesqueSchedulerThreadService implements Runnable, DisposableBean {
 
@@ -21,12 +21,14 @@ class JesqueSchedulerThreadService implements Runnable, DisposableBean {
 
     def jesqueSchedulerService
 
+    @Trace
     void startSchedulerThread() {
         schedulerThread = new Thread(this, "Jesque Scheduler Thread")
         schedulerThread.daemon = true
         schedulerThread.start()
     }
 
+    @Trace
     public void run() {
         if( !threadState.compareAndSet(JesqueScheduleThreadState.New, JesqueScheduleThreadState.Running)) {
             throw new Exception("Cannot start scheduler thread, state was not the expected ${JesqueScheduleThreadState.New} state")
@@ -41,7 +43,7 @@ class JesqueSchedulerThreadService implements Runnable, DisposableBean {
         log.info "Stopping jesque scheduler thread because thread state changed to ${threadState.get()}"
     }
 
-
+    @Trace
     public void mainThreadLoop() {
         //server checkin
         jesqueSchedulerService.serverCheckIn(getHostName(), new DateTime())
@@ -54,6 +56,7 @@ class JesqueSchedulerThreadService implements Runnable, DisposableBean {
             Thread.sleep(IDLE_WAIT_TIME)
     }
 
+    @Trace
     public void stop(Integer waitMilliseconds = IDLE_WAIT_TIME + 2000, Boolean interrupt = false) {
         log.info "Stopping the jesque scheduler thread"
         threadState.set(JesqueScheduleThreadState.Stopped)
@@ -66,6 +69,7 @@ class JesqueSchedulerThreadService implements Runnable, DisposableBean {
             schedulerThread.interrupt()
     }
 
+    @Trace
     public String getHostName() {
         if( !hostName ) {
             hostName = System.getProperty("jesque.hostname") ?: InetAddress.localHost.hostName
@@ -74,6 +78,7 @@ class JesqueSchedulerThreadService implements Runnable, DisposableBean {
         hostName
     }
 
+    @Trace
     protected withRetryUsingBackoff(int attempts, long maxSleepTimeMs, Closure closure) {
         for(int attempt = 1; attempt < MAX_RETRY_ATTEMPTS; attempt++) {
             try {
@@ -97,6 +102,7 @@ class JesqueSchedulerThreadService implements Runnable, DisposableBean {
         }
     }
 
+    @Trace
     void destroy() throws Exception {
         this.stop()
     }

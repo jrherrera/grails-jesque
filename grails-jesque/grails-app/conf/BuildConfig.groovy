@@ -28,6 +28,7 @@ grails.project.dependency.resolution = {
         mavenRepo "https://repo.grails.org/grails/plugins-releases-local"
     }
     dependencies {
+        //compile(':newrelic:1.0-2.18.0')
         compile('commons-pool:commons-pool:1.6')
         compile('net.greghaines:jesque:1.3.2')
         compile('redis.clients:jedis:2.6.0')
@@ -35,6 +36,7 @@ grails.project.dependency.resolution = {
     }
     plugins {
         compile ":redis:1.6.6"
+        compile ":newrelic:1.0-2.18.0"
         build(':release:3.1.1', ':rest-client-builder:2.1.1') {
             export = false
         }

@@ -4,6 +4,7 @@ import org.springframework.beans.factory.DisposableBean
 
 import java.util.concurrent.atomic.AtomicReference
 import org.joda.time.DateTime
+import com.newrelic.api.agent.Trace
 
 class JesqueDelayedJobThreadService implements Runnable, DisposableBean {
     static transactional = true
@@ -22,6 +23,7 @@ class JesqueDelayedJobThreadService implements Runnable, DisposableBean {
     def jesqueDelayedJobService
     def grailsApplication
 
+    @Trace
     void startThread() {
         delayedJobThread = new Thread(this, "Jesque Delayed Job Thread")
         delayedJobThread.daemon = true
@@ -30,6 +32,7 @@ class JesqueDelayedJobThreadService implements Runnable, DisposableBean {
         maxSleepTimeMs = grailsApplication.config.grails.jesque.delayedJobMaxSleepTimeMs ?: 500
     }
 
+    @Trace
     public void run() {
         if( !threadState.compareAndSet(JesqueDelayedJobThreadState.New, JesqueDelayedJobThreadState.Running)) {
             throw new Exception("Cannot start delayed job thread, state was not the expected ${JesqueDelayedJobThreadState.New} state")
@@ -44,6 +47,7 @@ class JesqueDelayedJobThreadService implements Runnable, DisposableBean {
         log.info "Stopping jesque delayed job thread because thread state changed to ${threadState.get()}"
     }
 
+    @Trace
     public void mainThreadLoop() {
         jesqueDelayedJobService.enqueueReadyJobs()
 
@@ -57,6 +61,7 @@ class JesqueDelayedJobThreadService implements Runnable, DisposableBean {
             Thread.sleep(maxSleepTimeMs)
     }
 
+    @Trace
     public void stop(Integer waitMilliseconds = IDLE_WAIT_TIME + 2000, Boolean interrupt = false) {
         log.info "Stopping the jesque delayed job thread"
         threadState.set(JesqueDelayedJobThreadState.Stopped)
@@ -69,6 +74,7 @@ class JesqueDelayedJobThreadService implements Runnable, DisposableBean {
             delayedJobThread.interrupt()
     }
 
+    @Trace
     protected withRetryUsingBackoff(int attempts, long maxSleepTimeMs, Closure closure) {
         for(int attempt = 1; attempt < MAX_RETRY_ATTEMPTS; attempt++) {
             try {
@@ -89,6 +95,7 @@ class JesqueDelayedJobThreadService implements Runnable, DisposableBean {
         }
     }
 
+    @Trace
     void destroy()  {
         this.stop()
     }

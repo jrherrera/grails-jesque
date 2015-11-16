@@ -6,6 +6,7 @@ import net.greghaines.jesque.worker.Worker
 import net.greghaines.jesque.Job
 import org.codehaus.groovy.grails.support.PersistenceContextInterceptor
 import org.apache.commons.logging.LogFactory
+import com.newrelic.api.agent.Trace
 
 class WorkerPersistenceListener implements WorkerListener {
 
@@ -17,6 +18,7 @@ class WorkerPersistenceListener implements WorkerListener {
         this.persistenceInterceptor = persistenceInterceptor
     }
 
+    @Trace
     void onEvent(WorkerEvent workerEvent, Worker worker, String s, Job job, Object o, Object o1, Exception e) {
         log.debug("Processing worker event ${workerEvent.name()}")
         if( workerEvent == WorkerEvent.JOB_EXECUTE ) {
@@ -26,6 +28,7 @@ class WorkerPersistenceListener implements WorkerListener {
         }
     }
 
+    @Trace
     private boolean bindSession() {
         if(persistenceInterceptor == null)
             throw new IllegalStateException("No persistenceInterceptor property provided")
@@ -38,6 +41,7 @@ class WorkerPersistenceListener implements WorkerListener {
         }
     }
 
+    @Trace
     private void unbindSession() {
         if(persistenceInterceptor == null)
             throw new IllegalStateException("No persistenceInterceptor property provided")
@@ -55,6 +59,7 @@ class WorkerPersistenceListener implements WorkerListener {
         }
     }
 
+    @Trace
     private static void fireThreadException(final Exception exception) {
         final Thread thread = Thread.currentThread()
         if (thread.uncaughtExceptionHandler == null) {

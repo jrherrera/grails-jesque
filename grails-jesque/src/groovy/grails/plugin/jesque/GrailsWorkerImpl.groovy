@@ -12,6 +12,7 @@ import net.greghaines.jesque.worker.WorkerImpl
 import net.greghaines.jesque.worker.RecoveryStrategy
 import static net.greghaines.jesque.worker.WorkerEvent.WORKER_ERROR
 import redis.clients.jedis.exceptions.JedisConnectionException
+import com.newrelic.api.agent.Trace
 
 class GrailsWorkerImpl extends WorkerImpl {
 
@@ -20,6 +21,7 @@ class GrailsWorkerImpl extends WorkerImpl {
     GrailsApplication grailsApplication
     JobExceptionHandler jobExceptionHandler
 
+    @Trace
     public GrailsWorkerImpl(
             GrailsApplication grailsApplication,
             final Config config,
@@ -31,6 +33,7 @@ class GrailsWorkerImpl extends WorkerImpl {
         beanBuilder = new BeanBuilder()
     }
 
+    @Trace
     protected void checkJobType(final String jobName, final Class<?> jobType) {
         if (jobName == null) {
             throw new IllegalArgumentException("jobName must not be null")
@@ -40,6 +43,7 @@ class GrailsWorkerImpl extends WorkerImpl {
         }
     }
 
+    @Trace
     protected void process(final Job job, final String curQueue) {
         this.listenerDelegate.fireEvent(JOB_PROCESS, this, curQueue, job, null, null, null)
         renameThread("Processing " + curQueue + " since " + System.currentTimeMillis())
@@ -55,15 +59,18 @@ class GrailsWorkerImpl extends WorkerImpl {
         }
     }
 
+    @Trace
     protected void failure(final Exception ex, final Job job, final String curQueue) {
         jobExceptionHandler?.onException(ex, job, curQueue)
         super.failure(ex, job, curQueue)
     }
 
+    @Trace
     protected Object createInstance(String fullClassName) {
         grailsApplication.mainContext.getBean(fullClassName)
     }
 
+    @Trace
     protected void execute(final Job job, final String curQueue, final Object instance, final Object[] args) {
         this.jedis.set(key(WORKER, this.name), statusMsg(curQueue, job))
         try {
@@ -76,6 +83,7 @@ class GrailsWorkerImpl extends WorkerImpl {
         }
     }
 
+    @Trace
     protected void recoverFromException(final String curQueue, final Exception e) {
         super.recoverFromException(curQueue, e)
         final RecoveryStrategy recoveryStrategy = this.exceptionHandler.onException(this, e, curQueue)

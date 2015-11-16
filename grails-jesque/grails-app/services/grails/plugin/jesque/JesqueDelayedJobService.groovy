@@ -5,6 +5,7 @@ import net.greghaines.jesque.Job
 import net.greghaines.jesque.json.ObjectMapperFactory
 import redis.clients.jedis.Pipeline
 import redis.clients.jedis.Jedis
+import com.newrelic.api.agent.Trace
 
 class JesqueDelayedJobService {
 
@@ -15,6 +16,7 @@ class JesqueDelayedJobService {
 
     protected static final String RESQUE_DELAYED_JOBS_PREFIX = 'resque:delayed'
 
+    @Trace
     public void enqueueAt(DateTime at, String queueName, Job job) {
         String jobString = ObjectMapperFactory.get().writeValueAsString(job)
 
@@ -29,6 +31,7 @@ class JesqueDelayedJobService {
         }
     }
 
+    @Trace
     public void enqueueReadyJobs() {
         def maxScore = new DateTime().millis as double
 
@@ -57,6 +60,7 @@ class JesqueDelayedJobService {
         }
     }
 
+    @Trace
     public DateTime nextFireTime() {
         def dateTime = redisService.withRedis { Jedis jedis ->
             def queues = jedis.smembers("${RESQUE_DELAYED_JOBS_PREFIX}:queues")
@@ -70,6 +74,7 @@ class JesqueDelayedJobService {
         return dateTime
     }
 
+    @Trace
     protected void deleteQueueTimestampListIfEmpty(String queueName, String timestamp) {
         String queueTimestampKey = "${RESQUE_DELAYED_JOBS_PREFIX}:${queueName}:${timestamp}"
         redisService.withRedis { Jedis jedis ->
@@ -87,6 +92,7 @@ class JesqueDelayedJobService {
         }
     }
 
+    @Trace
     protected void deleteDelayedQueueIfEmpty(String queueName) {
         String queueKey = "${RESQUE_DELAYED_JOBS_PREFIX}:${queueName}"
         redisService.withRedis { Jedis jedis ->

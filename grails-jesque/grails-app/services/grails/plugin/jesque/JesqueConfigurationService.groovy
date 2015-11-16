@@ -1,11 +1,13 @@
 package grails.plugin.jesque
 
 import org.joda.time.DateTimeZone
+import com.newrelic.api.agent.Trace
 
 class JesqueConfigurationService {
     def grailsApplication
     def jesqueSchedulerService
 
+    @Trace
     Boolean validateConfig(ConfigObject jesqueConfigMap) {
         jesqueConfigMap.workers.each{ String workerPoolName, ConfigObject value ->
             if( value.workers && !(value.workers instanceof Integer)  )
@@ -28,6 +30,7 @@ class JesqueConfigurationService {
         return true
     }
 
+    @Trace
     void mergeClassConfigurationIntoConfigMap(ConfigObject jesqueConfigMap) {
         grailsApplication.jesqueJobClasses.each { GrailsJesqueJobClass jobArtefact ->
             def alreadyConfiguredPool = jesqueConfigMap.workers.find{ poolName, poolConfig ->
@@ -68,6 +71,7 @@ class JesqueConfigurationService {
         }
     }
 
+    @Trace
     void scheduleJob(GrailsJesqueJobClass jobClass) {
         log.info("Scheduling ${jobClass.fullName}")
 
@@ -83,6 +87,7 @@ class JesqueConfigurationService {
         }
     }
 
+    @Trace
     void deleteScheduleJob(GrailsJesqueJobClass jobClass) {
         log.info("Remove schedule for ${jobClass.fullName}")
 

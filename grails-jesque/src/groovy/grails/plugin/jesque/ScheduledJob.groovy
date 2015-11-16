@@ -2,6 +2,7 @@ package grails.plugin.jesque
 
 import grails.converters.JSON
 import org.joda.time.DateTimeZone
+import com.newrelic.api.agent.Trace
 
 class ScheduledJob {
     public static final String REDIS_PREFIX = 'job'
@@ -16,6 +17,7 @@ class ScheduledJob {
 
     Trigger trigger
 
+    @Trace
     static ScheduledJob fromRedisHash(Map<String, String> hash) {
         ScheduledJob job = new ScheduledJob()
         job.cronExpression = hash.cronExpression
@@ -28,16 +30,19 @@ class ScheduledJob {
         return job
     }
 
+    @Trace
     Map<String, String> toRedisHash() {
         String argsJson = new JSON(args).toString()
 
         [name: name, cronExpression:cronExpression, args:argsJson, jesqueJobName:jesqueJobName, jesqueJobQueue:jesqueJobQueue, timeZone:timeZone.ID]
     }
 
+    @Trace
     String getRedisKey() {
         "$REDIS_PREFIX:$name"
     }
 
+    @Trace
     static getRedisKeyForName(String name) {
         "$REDIS_PREFIX:$name"
     }

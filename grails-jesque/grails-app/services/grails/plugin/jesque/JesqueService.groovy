@@ -14,6 +14,7 @@ import net.greghaines.jesque.worker.WorkerListener
 import org.codehaus.groovy.grails.support.PersistenceContextInterceptor
 import org.joda.time.DateTime
 import org.springframework.beans.factory.DisposableBean
+import com.newrelic.api.agent.Trace
 
 class JesqueService implements DisposableBean {
 
@@ -31,101 +32,113 @@ class JesqueService implements DisposableBean {
     List<Worker> workers = Collections.synchronizedList([])
     AdminClient jesqueAdminClient
 
+    @Trace
     void enqueue(String queueName, Job job) {
         jesqueClient.enqueue(queueName, job)
     }
 
+    @Trace
     void enqueue(String queueName, String jobName, List args) {
         enqueue(queueName, new Job(jobName, args))
     }
 
+    @Trace
     void enqueue(String queueName, Class jobClazz, List args) {
         enqueue(queueName, jobClazz.simpleName, args)
     }
 
+    @Trace
     void enqueue(String queueName, String jobName, Object... args) {
         enqueue(queueName, new Job(jobName, args))
     }
 
+    @Trace
     void enqueue(String queueName, Class jobClazz, Object... args) {
         enqueue(queueName, jobClazz.simpleName, args)
     }
 
+    @Trace
     void priorityEnqueue(String queueName, Job job) {
         jesqueClient.priorityEnqueue(queueName, job)
     }
 
+    @Trace
     void priorityEnqueue(String queueName, String jobName, def args) {
         priorityEnqueue(queueName, new Job(jobName, args))
     }
 
+    @Trace
     void priorityEnqueue(String queueName, Class jobClazz, def args) {
         priorityEnqueue(queueName, jobClazz.simpleName, args)
     }
 
+    @Trace
     void enqueueAt(DateTime dateTime, String queueName, Job job) {
         jesqueDelayedJobService.enqueueAt(dateTime, queueName, job)
     }
 
+    @Trace
     void enqueueAt(DateTime dateTime, String queueName, String jobName, Object... args) {
         enqueueAt( dateTime, queueName, new Job(jobName, args) )
     }
 
+    @Trace
     void enqueueAt(DateTime dateTime, String queueName, Class jobClazz, Object... args) {
         enqueueAt( dateTime, queueName, jobClazz.simpleName, args)
     }
 
+    @Trace
     void enqueueAt(DateTime dateTime, String queueName, String jobName, List args) {
         enqueueAt( dateTime, queueName, new Job(jobName, args) )
     }
 
+    @Trace
     void enqueueAt(DateTime dateTime, String queueName, Class jobClazz, List args) {
         enqueueAt( dateTime, queueName, jobClazz.simpleName, args )
     }
 
-
+    @Trace
     void enqueueIn(Integer millisecondDelay, String queueName, Job job) {
         enqueueAt( new DateTime().plusMillis(millisecondDelay), queueName, job )
     }
 
+    @Trace
     void enqueueIn(Integer millisecondDelay, String queueName, String jobName, Object... args) {
         enqueueIn( millisecondDelay, queueName, new Job(jobName, args) )
     }
 
+    @Trace
     void enqueueIn(Integer millisecondDelay, String queueName, Class jobClazz, Object... args) {
         enqueueIn( millisecondDelay, queueName, jobClazz.simpleName, args )
     }
 
+    @Trace
     void enqueueIn(Integer millisecondDelay, String queueName, String jobName, List args) {
         enqueueIn( millisecondDelay, queueName, new Job(jobName, args) )
     }
 
+    @Trace
     void enqueueIn(Integer millisecondDelay, String queueName, Class jobClazz, List args) {
         enqueueIn( millisecondDelay, queueName, jobClazz.simpleName, args )
     }
 
-
-    Worker startWorker(String queueName, String jobName, Class jobClass, ExceptionHandler exceptionHandler = null,
-                       boolean paused = false)
-    {
+    @Trace
+    Worker startWorker(String queueName, String jobName, Class jobClass, ExceptionHandler exceptionHandler = null, boolean paused = false){
         startWorker([queueName], [(jobName):jobClass], exceptionHandler, paused)
     }
 
-    Worker startWorker(List queueName, String jobName, Class jobClass, ExceptionHandler exceptionHandler = null,
-                       boolean paused = false)
-    {
+    @Trace
+    Worker startWorker(List queueName, String jobName, Class jobClass, ExceptionHandler exceptionHandler = null, boolean paused = false){
         startWorker(queueName, [(jobName):jobClass], exceptionHandler, paused)
     }
 
-    Worker startWorker(String queueName, Map<String, Class> jobTypes, ExceptionHandler exceptionHandler = null,
-                       boolean paused = false)
-    {
+    @Trace
+    Worker startWorker(String queueName, Map<String, Class> jobTypes, ExceptionHandler exceptionHandler = null, boolean paused = false){
         startWorker([queueName], jobTypes, exceptionHandler, paused)
     }
 
-    Worker startWorker(List<String> queues, Map<String, Class> jobTypes, ExceptionHandler exceptionHandler = null,
-                       boolean paused = false)
-    {
+    @Trace
+    Worker startWorker(List<String> queues, Map<String, Class> jobTypes, ExceptionHandler exceptionHandler = null, boolean paused = false){
         log.debug "Starting worker processing queueus: ${queues}"
 
         Class workerClass = GrailsWorkerImpl
@@ -182,6 +195,7 @@ class JesqueService implements DisposableBean {
         worker
     }
 
+    @Trace
     void stopAllWorkers() {
         log.info "Stopping ${workers.size()} jesque workers"
 
@@ -197,6 +211,7 @@ class JesqueService implements DisposableBean {
         }
     }
 
+    @Trace
     void withWorker(String queueName, String jobName, Class jobClassName, Closure closure) {
         def worker = startWorker(queueName, jobName, jobClassName)
         try {
@@ -206,6 +221,7 @@ class JesqueService implements DisposableBean {
         }
     }
 
+    @Trace
     void startWorkersFromConfig(ConfigObject jesqueConfigMap) {
 
         def startPaused = jesqueConfigMap.startPaused as boolean ?: false
@@ -229,6 +245,7 @@ class JesqueService implements DisposableBean {
         }
     }
 
+    @Trace
     void pruneWorkers() {
         def hostName = InetAddress.localHost.hostName
         workerInfoDao.allWorkers?.each { WorkerInfo workerInfo ->
@@ -239,15 +256,18 @@ class JesqueService implements DisposableBean {
         }
     }
 
+    @Trace
     public void removeWorkerFromLifecycleTracking(Worker worker) {
         log.debug "Removing worker ${worker.name} from lifecycle tracking"
         workers.remove(worker)
     }
 
+    @Trace
     void destroy() throws Exception {
         this.stopAllWorkers()
     }
 
+    @Trace
     void pauseAllWorkersOnThisNode() {
         log.info "Pausing all ${workers.size()} jesque workers on this node"
 
@@ -258,6 +278,7 @@ class JesqueService implements DisposableBean {
         }
     }
 
+    @Trace
     void resumeAllWorkersOnThisNode() {
         log.info "Resuming all ${workers.size()} jesque workers on this node"
 
@@ -268,21 +289,25 @@ class JesqueService implements DisposableBean {
         }
     }
 
+    @Trace
     void pauseAllWorkersInCluster() {
         log.debug "Pausing all workers in the cluster"
         jesqueAdminClient.togglePausedWorkers(true)
     }
 
+    @Trace
     void resumeAllWorkersInCluster() {
         log.debug "Resuming all workers in the cluster"
         jesqueAdminClient.togglePausedWorkers(false)
     }
 
+    @Trace
     void shutdownAllWorkersInCluster() {
         log.debug "Shutting down all workers in the cluster"
         jesqueAdminClient.shutdownWorkers(true)
     }
 
+    @Trace
     boolean areAllWorkersInClusterPaused() {
         return workerInfoDao.getActiveWorkerCount() == 0
     }
